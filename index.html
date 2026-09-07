@@ -1,0 +1,59 @@
+.disaster-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  border-radius: 16px;
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  color: #f3f4f6;
+}
+
+.disaster-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 28px;
+  background: color-mix(in srgb, var(--card-color) 18%, #111827);
+  border: 1px solid var(--card-color);
+}
+
+.disaster-body h3 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  color: white;
+}
+
+.disaster-body p {
+  margin: 0 0 10px;
+  color: #d1d5db;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge,
+.severity {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badge {
+  background: rgba(0, 0, 0, 0.927);
+  color: #e5e7eb;
+}
+
+.severity {
+  background: color-mix(in srgb, var(--card-color) 30%, #111827);
+  color: white;
+}
