@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORBITAL OBSERVER // Earth Incident Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0b0f19; color: #c3d1e5; padding: 20px; }
+
+    /* Header Stat Cards */
+    .top-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: #131b2e; border: 1px solid #1e293b; padding: 15px; border-radius: 8px; text-align: center; }
+    .stat-title { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-size: 1.8rem; font-weight: bold; color: #38bdf8; margin: 5px 0; }
+    .stat-sub { font-size: 0.7rem; color: #94a3b8; }
+    .menu { position: fixed; right: 20px; top: 20px; z-index: 10; }
+    .menu-btn { background: #131b2e; border: 1px solid #475569; border-radius: 6px; color: #f8fafc; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 9px 11px; }
+    .menu-btn:hover, .menu.open .menu-btn { border-color: #38bdf8; color: #67e8f9; }
+    .menu-panel { background: #131b2e; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); display: none; margin-top: 8px; min-width: 170px; padding: 6px; }
+    .menu.open .menu-panel { display: block; animation: reveal .2s ease-out; }
+    .logout-btn { background: transparent; border: 0; border-radius: 5px; color: #fecdd3; cursor: pointer; padding: 10px 12px; text-align: left; width: 100%; }
+    .logout-btn:hover { background: #3f1d2a; }
+    .globe-menu-btn { background: transparent; border: 0; border-radius: 5px; color: #bae6fd; cursor: pointer; padding: 10px 12px; text-align: left; width: 100%; }
+    .globe-menu-btn:hover { background: #164e63; }
+    .globe-guide { border-top: 1px solid #334155; color: #94a3b8; font-size: .7rem; line-height: 1.45; margin-top: 5px; padding: 9px 8px 5px; }
+    .globe-legend { align-items: center; color: #cbd5e1; display: flex; flex-wrap: wrap; font-size: .72rem; gap: 12px; padding: 9px 16px; }
+    .legend-item::before { border-radius: 50%; content: ''; display: inline-block; height: 8px; margin-right: 5px; width: 8px; }
+    .legend-info { color: #64748b; }
+    .globe-view { background: #07111f; border: 1px solid #29415f; border-radius: 10px; display: none; margin-bottom: 25px; overflow: hidden; }
+    .globe-view.open { display: block; animation: reveal .35s ease-out; }
+    .globe-head { align-items: center; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; padding: 13px 16px; }
+    .globe-title { color: #f8fafc; font-size: 1rem; }
+    .globe-status { color: #67e8f9; font-size: .72rem; margin-top: 4px; }
+    .globe-actions { display: flex; gap: 7px; }
+    .globe-action { background: #0f172a; border: 1px solid #475569; border-radius: 5px; color: #cbd5e1; cursor: pointer; padding: 7px 10px; }
+    .globe-action:hover { border-color: #38bdf8; color: #fff; }
+    .globe-zoom-controls { display: flex; gap: 4px; }
+    .globe-zoom-control { background: #0f172a; border: 1px solid #475569; border-radius: 5px; color: #67e8f9; cursor: pointer; font-size: 1rem; min-width: 31px; padding: 5px 8px; }
+    .globe-zoom-control:hover { border-color: #38bdf8; color: #fff; }
+    #globe-canvas { background: radial-gradient(circle at 50% 45%, #123452, #07111f 65%); cursor: grab; display: block; height: 390px; touch-action: none; width: 100%; }
+    #globe-canvas.dragging { cursor: grabbing; }
+
+    /* Filter & Search Bar */
+    .controls { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+    .search-input { background: #1e293b; border: 1px solid #334155; color: #fff; padding: 8px 15px; border-radius: 6px; flex-grow: 1; min-width: 200px; }
+    .filter-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+    .filter-btn.active, .filter-btn:hover { background: #2563eb; color: #fff; border-color: #3b82f6; }
+    .start-event-btn { background: #16a34a; border: 1px solid #4ade80; color: #fff; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+    .start-event-btn.running { background: #991b1b; border-color: #f87171; }
+    .event-status { color: #fbbf24; font-size: 0.75rem; padding-left: 4px; }
+    .alien-pilot { height: 142px; margin: -18px auto 8px; position: relative; width: 255px; }
+    .ufo { background: linear-gradient(#9fffe0, #27b98c); border: 2px solid #b8ffe7; border-radius: 50% 50% 42% 42%; bottom: 16px; box-shadow: 0 0 24px rgba(69, 240, 162, .55); height: 30px; left: 17px; position: absolute; transform: rotate(-5deg); width: 220px; }
+    .ufo::before { background: rgba(201, 255, 236, .78); border: 2px solid #45f0a2; border-radius: 50% 50% 15% 15%; content: ''; height: 48px; left: 72px; position: absolute; top: -34px; width: 76px; }
+    .ufo::after { background: repeating-linear-gradient(90deg, #f8ffb0 0 10px, transparent 10px 22px); border-radius: 50%; bottom: 2px; content: ''; height: 5px; left: 32px; opacity: .9; position: absolute; width: 154px; }
+    .alien-head { background: #74d8b2; border: 2px solid #c6ffe9; border-radius: 48% 48% 45% 45%; height: 51px; left: 105px; position: absolute; top: 29px; transform: rotate(-4deg); width: 49px; z-index: 2; }
+    .alien-head::before, .alien-head::after { background: #092a28; border-radius: 50%; content: ''; height: 14px; position: absolute; top: 17px; width: 8px; }
+    .alien-head::before { left: 11px; transform: rotate(12deg); }
+    .alien-head::after { right: 11px; transform: rotate(-12deg); }
+    .alien-neck { background: #54b38e; height: 20px; left: 123px; position: absolute; top: 72px; width: 14px; z-index: 1; }
+    .alien-body { background: #317d74; border: 2px solid #9ef4ce; border-radius: 18px 18px 8px 8px; height: 39px; left: 100px; position: absolute; top: 82px; transform: rotate(-4deg); width: 60px; z-index: 2; }
+    .alien-arm { background: #68c79f; border: 2px solid #b8ffe7; border-radius: 15px; height: 12px; position: absolute; top: 91px; width: 56px; z-index: 3; }
+    .alien-arm.left { left: 65px; transform: rotate(25deg); }
+    .alien-arm.right { left: 143px; transform: rotate(-22deg); }
+    .alien-gun { background: #c3d5d1; border: 2px solid #182d35; border-radius: 3px; height: 8px; left: 153px; position: absolute; top: 78px; transform: rotate(-30deg); width: 49px; z-index: 4; }
+    .alien-gun::before { background: #68f5b0; border-radius: 50%; content: ''; height: 7px; left: 4px; position: absolute; top: -2px; width: 7px; }
+    .alien-gun::after { background: #344e57; content: ''; height: 14px; left: 10px; position: absolute; top: 6px; transform: rotate(25deg); width: 7px; }
+    .alien-leg { background: #235c5d; border: 2px solid #8ce8c4; border-radius: 10px; bottom: 34px; height: 26px; position: absolute; width: 15px; z-index: 1; }
+    .alien-leg.left { left: 111px; transform: rotate(18deg); }
+    .alien-leg.right { left: 138px; transform: rotate(-18deg); }
+    .alien-caption { bottom: -1px; color: #8fffc2; font-size: .62rem; left: 0; letter-spacing: 2px; position: absolute; text-align: center; width: 255px; }
+    .solar-system { inset: 0; overflow: hidden; pointer-events: none; position: fixed; z-index: -1; }
+    .star-field { background-image: radial-gradient(circle, rgba(255, 255, 255, .8) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(125, 211, 252, .55) 0 1px, transparent 1.5px); background-position: 12% 18%, 78% 65%; background-size: 97px 113px, 149px 137px; inset: 0; opacity: .6; position: absolute; }
+    .sun { background: radial-gradient(circle at 35% 30%, #fff7ad, #f59e0b 45%, #c2410c 78%); border-radius: 50%; box-shadow: 0 0 28px #f59e0b, 0 0 80px rgba(249, 115, 22, .32); height: 104px; left: 72%; position: absolute; top: 19%; width: 104px; }
+    .sun::after { border: 1px solid rgba(253, 186, 116, .5); border-radius: 50%; content: ''; inset: -18px; position: absolute; }
+    .orbit { border: 1px solid rgba(125, 211, 252, .12); border-radius: 50%; height: 260px; position: absolute; right: 4%; top: 9%; transform: rotate(-15deg); width: 430px; }
+    .orbit::before, .orbit::after { border: 1px solid rgba(74, 222, 128, .1); border-radius: 50%; content: ''; inset: -52px 40px; position: absolute; transform: rotate(35deg); }
+    .orbit::after { inset: 42px -35px; transform: rotate(-19deg); }
+    .planet { animation: planetDrift 14s linear infinite; border-radius: 50%; height: 22px; position: absolute; right: 15%; top: 16%; width: 22px; }
+    .planet-one { background: #67e8f9; box-shadow: 0 0 12px #67e8f9; }
+    .planet-two { animation-delay: -5s; background: #a78bfa; box-shadow: 0 0 12px #a78bfa; height: 15px; right: 43%; top: 77%; width: 15px; }
+    .planet-three { animation-delay: -9s; background: #4ade80; box-shadow: 0 0 14px #4ade80; height: 29px; right: 72%; top: 36%; width: 29px; }
+    .planet-three::after { border: 2px solid rgba(186, 230, 253, .55); border-radius: 50%; content: ''; inset: 6px -7px; position: absolute; transform: rotate(-20deg); }
+    @keyframes planetDrift { 0% { transform: translate(0, 0); } 25% { transform: translate(-70px, 34px); } 50% { transform: translate(-130px, -8px); } 75% { transform: translate(-55px, -55px); } 100% { transform: translate(0, 0); } }
+    @media (max-width: 700px) { .sun { height: 70px; right: -15px; left: auto; top: 12%; width: 70px; } .orbit { right: -120px; top: 6%; transform: rotate(-15deg) scale(.72); } .planet-three { right: 66%; } }
+    .ui-orbit-banner { align-items: center; background: linear-gradient(110deg, rgba(7, 35, 38, .96), rgba(8, 21, 30, .9)); border: 1px solid rgba(68, 255, 175, .38); border-radius: 10px; display: flex; justify-content: space-between; margin: 0 0 25px; min-height: 155px; overflow: hidden; padding: 18px 28px; position: relative; }
+    .ui-orbit-banner::before { border: 1px solid rgba(68, 255, 175, .14); border-radius: 50%; content: ''; height: 280px; position: absolute; right: 80px; transform: rotate(-16deg); width: 560px; }
+    .ui-orbit-copy { position: relative; z-index: 1; }
+    .ui-orbit-kicker { color: #68f5b0; font-size: .68rem; letter-spacing: 2px; text-transform: uppercase; }
+    .ui-orbit-title { color: #d7ffeb; font-family: Georgia, serif; font-size: 1.55rem; margin: 8px 0 5px; }
+    .ui-orbit-status { color: #82a99a; font-size: .78rem; }
+    .ui-orbit-pilot { flex: 0 0 255px; margin: 0 -5px 0 20px; transform: scale(.9); }
+    @media (max-width: 700px) { .ui-orbit-banner { align-items: flex-start; min-height: 230px; padding: 18px; } .ui-orbit-pilot { align-self: flex-end; margin-right: -80px; transform: scale(.72); transform-origin: bottom right; } }
+
+    /* Login gate */
+    .login-screen { min-height: calc(100vh - 40px); display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 15% 15%, rgba(14, 116, 144, .22), transparent 34%), radial-gradient(circle at 85% 85%, rgba(37, 99, 235, .18), transparent 35%), #0b0f19; }
+    .login-panel { width: min(100%, 430px); background: rgba(19, 27, 46, .94); border: 1px solid #29415f; border-radius: 14px; padding: 34px; box-shadow: 0 24px 80px rgba(0, 0, 0, .35); animation: reveal .45s ease-out; }
+    .login-mark { display: inline-flex; align-items: center; gap: 9px; color: #67e8f9; font-size: .75rem; font-weight: bold; letter-spacing: 2px; }
+    .login-mark::before { content: ''; width: 10px; height: 10px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 14px #22d3ee; }
+    .login-title { color: #f8fafc; font-size: 2rem; margin: 18px 0 8px; }
+    .login-subtitle { color: #94a3b8; font-size: .9rem; line-height: 1.5; margin-bottom: 28px; }
+    .login-form { display: grid; gap: 16px; }
+    .field { display: grid; gap: 7px; }
+    .field label { color: #cbd5e1; font-size: .8rem; font-weight: 600; }
+    .field input { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 7px; color: #f8fafc; padding: 12px 13px; font-size: .95rem; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .field input:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, .14); }
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 72px; }
+    .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: #67e8f9; cursor: pointer; font-size: .75rem; padding: 7px; }
+    .login-submit { border: 0; border-radius: 7px; background: #0891b2; color: #fff; cursor: pointer; font-size: .95rem; font-weight: bold; margin-top: 4px; padding: 13px; transition: background .2s, transform .2s; }
+    .login-submit:hover { background: #0e7490; transform: translateY(-1px); }
+    .login-message { min-height: 20px; color: #fda4af; font-size: .8rem; }
+    .login-switch { background: transparent; border: 0; color: #67e8f9; cursor: pointer; display: block; font-size: .8rem; margin: 18px auto 0; padding: 4px; }
+    .login-switch:hover { color: #a5f3fc; text-decoration: underline; }
+    .login-help { color: #64748b; font-size: .72rem; margin-top: 20px; text-align: center; }
+    #dashboard[hidden], #login-screen[hidden] { display: none; }
+
+    /* Cards Grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .card { background: #131b2e; border: 1px solid #1e2b45; border-radius: 10px; padding: 18px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 10px; font-weight: bold; }
+    .card-title { font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 8px; }
+    .card-desc { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; margin-bottom: 20px; flex-grow: 1; }
+    .card-meta { color: #67e8f9; font-size: .72rem; line-height: 1.5; margin: -8px 0 16px; }
+    .deploy-btn { background: #1e293b; border: 1px solid #3b82f6; color: #38bdf8; width: 100%; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .deploy-btn:hover { background: #3b82f6; color: #fff; }
+
+    .simulator { display: none; background: #070b13; border: 1px solid #334155; border-radius: 10px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 0 35px rgba(14, 165, 233, 0.08); }
+    .simulator.open { display: block; animation: reveal 0.35s ease-out; }
+    .sim-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #1e293b; }
+    .sim-label { color: #38bdf8; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; }
+    .sim-title { color: #f8fafc; font-size: 1.2rem; margin-top: 4px; }
+    .level-controls { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .level-btn { background: #111827; border: 1px solid #334155; color: #94a3b8; padding: 6px 9px; border-radius: 5px; cursor: pointer; font-size: 0.75rem; }
+    .level-btn.active, .level-btn:hover { color: #fff; border-color: #38bdf8; background: #164e63; }
+    .level-btn[data-level="3"].active { border-color: #fb7185; background: #7f1d1d; }
+    .close-btn { background: transparent; border: 1px solid #475569; color: #cbd5e1; padding: 7px 11px; border-radius: 6px; cursor: pointer; }
+    .close-btn:hover { border-color: #f97316; color: #fff; }
+    #disaster-canvas { display: block; width: 100%; height: 330px; background: radial-gradient(circle at 50% 20%, #172554, #070b13 68%); }
+    @keyframes reveal { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 700px) { .top-stats { grid-template-columns: repeat(2, 1fr); } .sim-head { align-items: flex-start; } #disaster-canvas { height: 250px; } }
+
+    /* Alien observation interface */
+    body { background: #050914; color: #c9f7e1; font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; overflow-x: hidden; }
+    body::before { background: repeating-linear-gradient(0deg, transparent 0 5px, rgba(67, 255, 176, .025) 6px), radial-gradient(circle at 50% -10%, rgba(41, 255, 166, .13), transparent 42%); content: ''; inset: 0; pointer-events: none; position: fixed; z-index: -1; }
+    .stat-card, .card, .simulator, .globe-view, .login-panel, .menu-panel { background: rgba(7, 20, 29, .9); border-color: rgba(68, 255, 175, .3); box-shadow: 0 0 0 1px rgba(53, 218, 149, .04), 0 16px 45px rgba(0, 0, 0, .3); }
+    .stat-card:hover, .card:hover { border-color: rgba(68, 255, 175, .75); box-shadow: 0 0 24px rgba(68, 255, 175, .12); transform: translateY(-2px); transition: .2s; }
+    .stat-title, .card-header, .sim-label, .login-mark { color: #68f5b0; letter-spacing: 1.5px; }
+    .stat-value { color: #a6ffd0; text-shadow: 0 0 12px rgba(68, 255, 175, .55); }
+    .stat-sub, .card-desc, .login-subtitle, .globe-guide, .legend-info { color: #82a99a; }
+    .menu-btn, .globe-action, .globe-zoom-control, .close-btn, .filter-btn, .search-input, .level-btn { background: #08151e; border-color: #28664f; color: #b5f5d2; }
+    .menu-btn:hover, .menu.open .menu-btn, .filter-btn.active, .filter-btn:hover, .level-btn.active, .level-btn:hover, .globe-action:hover, .globe-zoom-control:hover { background: #0c4938; border-color: #45f0a2; color: #e0ffed; }
+    .menu-btn { box-shadow: 0 0 16px rgba(68, 255, 175, .17); }
+    .globe-menu-btn { color: #8fffc2; }
+    .logout-btn { color: #ff9aa9; }
+    .login-screen { background: radial-gradient(circle at 50% 40%, rgba(35, 194, 123, .15), transparent 26%), radial-gradient(circle at 50% 100%, rgba(31, 81, 125, .2), transparent 55%), #050914; }
+    .login-panel { border-color: #3de197; position: relative; }
+    .login-panel::after { border: 1px solid rgba(68, 255, 175, .25); content: ''; inset: 8px; pointer-events: none; position: absolute; }
+    .login-mark::before { background: #45f0a2; box-shadow: 0 0 16px #45f0a2; }
+    .login-title { color: #d7ffeb; font-family: Georgia, serif; letter-spacing: .5px; }
+    .field input:focus { border-color: #45f0a2; box-shadow: 0 0 0 3px rgba(69, 240, 162, .16); }
+    .login-submit, .deploy-btn { background: #087f5b; border-color: #45f0a2; color: #e8fff3; }
+    .login-submit:hover, .deploy-btn:hover { background: #0ca675; }
+    .globe-title, .sim-title, .card-title { color: #d7ffeb; }
+    .globe-view { background: #04131a; }
+    #globe-canvas { background: radial-gradient(circle at 50% 45%, #0a493d, #04131a 65%); }
+    #disaster-canvas { background: radial-gradient(circle at 50% 20%, #102d2c, #040b12 68%); }
+    .globe-legend { border-top: 1px solid rgba(68, 255, 175, .15); }
+    .event-status { color: #f2cf65; }
+    .start-event-btn { background: #087f5b; border-color: #45f0a2; }
+
+  </style>
+</head>
+<body>
+
+  <div class="solar-system" aria-hidden="true">
+    <div class="star-field"></div>
+    <div class="orbit"></div>
+    <div class="sun"></div>
+    <div class="planet planet-one"></div>
+    <div class="planet planet-two"></div>
+    <div class="planet planet-three"></div>
+  </div>
+
+  <section class="login-screen" id="login-screen">
+    <div class="login-panel">
+      <div class="alien-pilot" aria-label="Alien pilot holding a sci-fi blaster while riding a UFO" role="img">
+        <div class="ufo"></div>
+        <div class="alien-head"></div>
+        <div class="alien-neck"></div>
+        <div class="alien-body"></div>
+        <div class="alien-arm left"></div>
+        <div class="alien-arm right"></div>
+        <div class="alien-gun"></div>
+        <div class="alien-leg left"></div>
+        <div class="alien-leg right"></div>
+        <div class="alien-caption">ORBITAL INVASION // OBSERVE</div>
+      </div>
+      <div class="login-mark">ORBITAL OBSERVER // SPECIES 07</div>
+      <h1 class="login-title">Welcome back</h1>
+      <p class="login-subtitle" id="login-subtitle">Sign in to monitor disasters across planet Earth</p>
+      <form class="login-form" id="login-form">
+        <div class="field">
+          <label for="username">Observer name</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="e.g. observer01" minlength="3" required>
+        </div>
+        <div class="field">
+          <label for="password">Access code</label>
+          <div class="password-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter access code" minlength="4" required>
+            <button class="password-toggle" id="password-toggle" type="button" aria-label="Show access code">Show</button>
+          </div>
+        </div>
+        <div class="field" id="confirm-password-field" hidden>
+          <label for="confirm-password">Confirm access code</label>
+          <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" placeholder="Enter access code again" minlength="4">
+        </div>
+        <div class="login-message" id="login-message" role="alert" aria-live="polite"></div>
+        <button class="login-submit" id="login-submit" type="submit">Enter observation station</button>
+      </form>
+      <button class="login-switch" id="login-switch" type="button">No account? Sign up</button>
+      <p class="login-help">Secure channel - observer name requires at least 3 characters</p>
+    </div>
+  </section>
+
+  <main id="dashboard" hidden>
+  <div class="menu" id="menu">
+    <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">MENU</button>
+    <div class="menu-panel" id="menu-panel">
+      <button class="globe-menu-btn" id="globe-menu-btn" type="button">[O] Open planet 3D</button>
+      <div class="globe-guide">Observation controls: drag to rotate or pan, zoom to switch to 2D, then select an incident marker</div>
+      <button class="logout-btn" id="logout-btn" type="button">Log out</button>
+    </div>
+  </div>
+
+  <section class="ui-orbit-banner" aria-label="Alien orbital observation status">
+    <div class="ui-orbit-copy">
+      <div class="ui-orbit-kicker">Orbital invasion // observation deck</div>
+      <h1 class="ui-orbit-title">Earth under alien observation</h1>
+      <p class="ui-orbit-status">Pilot signal active • monitoring 14 planetary disaster patterns</p>
+    </div>
+    <div class="alien-pilot ui-orbit-pilot" aria-hidden="true">
+      <div class="ufo"></div>
+      <div class="alien-head"></div>
+      <div class="alien-neck"></div>
+      <div class="alien-body"></div>
+      <div class="alien-arm left"></div>
+      <div class="alien-arm right"></div>
+      <div class="alien-gun"></div>
+      <div class="alien-leg left"></div>
+      <div class="alien-leg right"></div>
+    </div>
+  </section>
+
+  <section class="globe-view" id="globe-view" aria-live="polite">
+    <div class="globe-head">
+      <div>
+        <div class="globe-title">Earth observation map</div>
+        <div class="globe-status" id="globe-status">3D mode - rotating</div>
+      </div>
+      <div class="globe-actions">
+        <div class="globe-zoom-controls" aria-label="Zoom controls">
+          <button class="globe-zoom-control" id="globe-zoom-out" type="button" aria-label="Zoom out">-</button>
+          <button class="globe-zoom-control" id="globe-zoom-in" type="button" aria-label="Zoom in">+</button>
+        </div>
+        <button class="globe-action" id="globe-world-btn" type="button">Fit world</button>
+        <button class="globe-action" id="globe-zoom-btn" type="button">Zoom to 2D</button>
+        <button class="globe-action" id="globe-close-btn" type="button">Close</button>
+      </div>
+    </div>
+    <canvas id="globe-canvas"></canvas>
+    <div class="globe-legend">
+      <span class="legend-item legend-critical">Critical</span>
+      <span class="legend-item legend-high">High alert</span>
+      <span class="legend-info">Simulated data based on real locations and metrics; not a live emergency bulletin</span>
+    </div>
+  </section>
+
+  <!-- Top Stats -->
+  <div class="top-stats">
+    <div class="stat-card">
+      <div class="stat-title">Detected signals</div>
+      <div class="stat-value" id="total-hazards">14</div>
+      <div class="stat-sub">All 14 incident types mapped</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Planet stability</div>
+      <div class="stat-value">98.4 %</div>
+      <div class="stat-sub">Change index +1.2%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Observation power</div>
+      <div class="stat-value">1250</div>
+      <div class="stat-sub">Level 5 access clearance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Simulation logs</div>
+      <div class="stat-value">15</div>
+      <div class="stat-sub">Mission history stored</div>
+    </div>
+  </div>
+
+  <!-- Filter & Search -->
+  <div class="controls">
+    <input type="text" id="search" class="search-input" placeholder="Search incidents, names, or coordinates..." onkeyup="filterCards()">
+    <button class="filter-btn active" onclick="filterCategory('ALL')">ALL</button>
+    <button class="filter-btn" onclick="filterCategory('GEOLOGICAL')">GEOLOGICAL</button>
+    <button class="filter-btn" onclick="filterCategory('WATER')">WATER</button>
+    <button class="filter-btn" onclick="filterCategory('FIRE')">FIRE</button>
+    <button class="filter-btn" onclick="filterCategory('HAZARD')">HAZARD</button>
+  </div>
+
+  <section class="simulator" id="simulator" aria-live="polite">
+    <div class="sim-head">
+      <div><div class="sim-label">Alien observation feed // visual simulation</div><div class="sim-title" id="sim-title">Select an incident to observe</div><div class="level-controls" role="group" aria-label="Incident severity"><button class="level-btn active" data-level="1" onclick="setSimulationLevel(1)">Low</button><button class="level-btn" data-level="2" onclick="setSimulationLevel(2)">Elevated</button><button class="level-btn" data-level="3" onclick="setSimulationLevel(3)">Severe</button><button class="start-event-btn" id="start-event" onclick="toggleEvent()">Start observation</button><span class="event-status" id="event-status">Select a level and start observation</span></div></div>
+      <button class="close-btn" onclick="closeSimulation()" aria-label="Close simulator">CLOSE</button>
+    </div>
+    <canvas id="disaster-canvas"></canvas>
+  </section>
+
+  <!-- Cards Container -->
+  <div class="grid" id="card-container"></div>
+
+  </main>
+
+  <script>
+    const loginScreen = document.getElementById('login-screen');
+    const dashboard = document.getElementById('dashboard');
+    const loginForm = document.getElementById('login-form');
+    const loginMessage = document.getElementById('login-message');
+    const loginSubtitle = document.getElementById('login-subtitle');
+    const loginSubmit = document.getElementById('login-submit');
+    const loginSwitch = document.getElementById('login-switch');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm-password-field');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+    const passwordToggle = document.getElementById('password-toggle');
+    const menu = document.getElementById('menu');
+    const menuButton = document.getElementById('menu-btn');
+    const globeMenuButton = document.getElementById('globe-menu-btn');
+    const globeView = document.getElementById('globe-view');
+    const globeCanvas = document.getElementById('globe-canvas');
+    const globeStatus = document.getElementById('globe-status');
+    const globeZoomIn = document.getElementById('globe-zoom-in');
+    const globeZoomOut = document.getElementById('globe-zoom-out');
+    const globeWorldButton = document.getElementById('globe-world-btn');
+    const globeZoomButton = document.getElementById('globe-zoom-btn');
+    const globeCloseButton = document.getElementById('globe-close-btn');
+    const logoutButton = document.getElementById('logout-btn');
+    let isSignupMode = false;
+    let globeMode = '3d';
+    let globeAnimationFrame;
+    let globeRotation = 0;
+    let globeZoom = 1;
+    let globeDragging = false;
+    let globeDragged = false;
+    let globeLastX = 0;
+    let globeLastY = 0;
+    let globePanX = 0;
+    let globePanY = 0;
+    let worldFeatures = [];
+    let worldDataLoading = false;
+    const disasterLocations = [
+      { name: 'Earthquake', country: 'Japan', continent: 'Global region', longitude: 138.25, latitude: 36.2, severity: 'critical', metric: 'Observed event' },
+      { name: 'Tsunami', country: 'Indonesia', continent: 'Global region', longitude: 118.0, latitude: -2.0, severity: 'critical', metric: 'Observed event' },
+      { name: 'Typhoon', country: 'Philippines', continent: 'Global region', longitude: 122.0, latitude: 12.0, severity: 'high', metric: 'Observed event' },
+      { name: 'Fire', country: 'Canada', continent: 'Global region', longitude: -106.0, latitude: 56.0, severity: 'high', metric: 'Observed event' },
+      { name: 'Hurricane', country: 'United States', continent: 'Global region', longitude: -86.0, latitude: 29.0, severity: 'critical', metric: 'Observed event' },
+      { name: 'Flash Flood', country: 'Thailand', continent: 'Global region', longitude: 100.5, latitude: 13.75, severity: 'high', metric: 'Observed event' },
+      { name: 'Volcanic', country: 'Iceland', continent: 'Global region', longitude: -19.0, latitude: 64.9, severity: 'critical', metric: 'Observed event' },
+      { name: 'Lightning', country: 'Kenya', continent: 'Global region', longitude: 37.9, latitude: 0.2, severity: 'high', metric: 'Observed event' },
+      { name: 'Tornado', country: 'United States', continent: 'Global region', longitude: -97.0, latitude: 35.5, severity: 'critical', metric: 'Observed event' },
+      { name: 'Nuclear', country: 'Ukraine', continent: 'Global region', longitude: 31.2, latitude: 51.4, severity: 'critical', metric: 'Observed event' },
+      { name: 'Pandemic', country: 'Brazil', continent: 'Global region', longitude: -51.9, latitude: -10.8, severity: 'high', metric: 'Observed event' },
+      { name: 'Landslide', country: 'Nepal', continent: 'Global region', longitude: 84.1, latitude: 28.4, severity: 'high', metric: 'Observed event' },
+      { name: 'Heatwave', country: 'Australia', continent: 'Global region', longitude: 133.8, latitude: -25.3, severity: 'high', metric: 'Observed event' },
+      { name: 'Chemical', country: 'Germany', continent: 'Global region', longitude: 10.4, latitude: 51.2, severity: 'critical', metric: 'Observed event' }
+    ];
+
+    function showDashboard() {
+      loginScreen.hidden = true;
+      dashboard.hidden = false;
+    }
+
+    function closeMenu() {
+      menu.classList.remove('open');
+      menuButton.setAttribute('aria-expanded', 'false');
+    }
+
+    menuButton.addEventListener('click', () => {
+      const isOpen = menu.classList.toggle('open');
+      menuButton.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    globeMenuButton.addEventListener('click', () => {
+      globeView.classList.add('open');
+      closeMenu();
+      resizeGlobeCanvas();
+      globeView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      loadWorldData();
+      animateGlobe();
+    });
+
+    globeZoomButton.addEventListener('click', () => {
+      globeMode = globeMode === '3d' ? '2d' : '3d';
+      if (globeMode === '2d') {
+        globeZoom = 1;
+        globePanX = 0;
+        globePanY = 0;
+      }
+      globeZoomButton.textContent = globeMode === '3d' ? 'Zoom to 2D' : 'Back to 3D';
+      globeStatus.textContent = globeMode === '3d' ? '3D mode - rotating' : '2D mode - flat world map';
+      drawGlobe();
+    });
+
+    globeWorldButton.addEventListener('click', () => {
+      globeZoom = 1;
+      globePanX = 0;
+      globePanY = 0;
+      drawGlobe();
+    });
+
+    function changeGlobeZoom(amount) {
+      globeZoom = Math.max(.7, Math.min(2.2, globeZoom + amount));
+      drawGlobe();
+    }
+
+    globeZoomIn.addEventListener('click', () => changeGlobeZoom(.15));
+    globeZoomOut.addEventListener('click', () => changeGlobeZoom(-.15));
+    globeCanvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      changeGlobeZoom(event.deltaY < 0 ? .1 : -.1);
+    }, { passive: false });
+
+    globeCanvas.addEventListener('click', (event) => {
+      if (globeDragged) {
+        globeDragged = false;
+        return;
+      }
+      const bounds = globeCanvas.getBoundingClientRect();
+      const clickX = event.clientX - bounds.left;
+      const clickY = event.clientY - bounds.top;
+      const clickedLocation = disasterLocations.find((location) => {
+        let markerX;
+        let markerY;
+        if (globeMode === '3d') {
+          const radius = Math.min(bounds.width, bounds.height) * .31 * globeZoom;
+          const longitude = location.longitude * Math.PI / 180 + globeRotation;
+          const latitude = location.latitude * Math.PI / 180;
+          if (Math.cos(latitude) * Math.cos(longitude) <= 0) return false;
+          markerX = bounds.width / 2 + radius * Math.cos(latitude) * Math.sin(longitude);
+          markerY = bounds.height / 2 - radius * Math.sin(latitude);
+        } else {
+          const mapWidth = bounds.width * .92 * globeZoom;
+          const mapHeight = bounds.height * .76 * globeZoom;
+          markerX = (bounds.width - mapWidth) / 2 + globePanX + (location.longitude + 180) / 360 * mapWidth;
+          markerY = (bounds.height - mapHeight) / 2 + globePanY + (90 - location.latitude) / 180 * mapHeight;
+        }
+        return Math.hypot(clickX - markerX, clickY - markerY) <= 16;
+      });
+      if (!clickedLocation) return;
+      const disaster = disasters.find((item) => item.name === clickedLocation.name);
+      if (!disaster) return;
+      globeView.classList.remove('open');
+      cancelAnimationFrame(globeAnimationFrame);
+      launchSimulation(disaster.id, disaster.name);
+    });
+
+    globeCanvas.addEventListener('pointerdown', (event) => {
+      globeDragging = true;
+      globeDragged = false;
+      globeLastX = event.clientX;
+      globeLastY = event.clientY;
+      globeCanvas.classList.add('dragging');
+      globeCanvas.setPointerCapture(event.pointerId);
+    });
+
+    globeCanvas.addEventListener('pointermove', (event) => {
+      if (!globeDragging) return;
+      const deltaX = event.clientX - globeLastX;
+      const deltaY = event.clientY - globeLastY;
+      if (Math.abs(deltaX) + Math.abs(deltaY) > 2) globeDragged = true;
+      globeLastX = event.clientX;
+      globeLastY = event.clientY;
+      if (globeMode === '3d') globeRotation += deltaX * .008;
+      else {
+        globePanX += deltaX;
+        globePanY += deltaY;
+      }
+      drawGlobe();
+    });
+
+    function stopGlobeDragging(event) {
+      globeDragging = false;
+      globeCanvas.classList.remove('dragging');
+      if (event.pointerId) globeCanvas.releasePointerCapture(event.pointerId);
+    }
+
+    globeCanvas.addEventListener('pointerup', stopGlobeDragging);
+    globeCanvas.addEventListener('pointercancel', stopGlobeDragging);
+
+    globeCloseButton.addEventListener('click', () => {
+      globeView.classList.remove('open');
+      cancelAnimationFrame(globeAnimationFrame);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!menu.contains(event.target)) closeMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeMenu();
+    });
+
+    function resizeGlobeCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      globeCanvas.width = globeCanvas.clientWidth * ratio;
+      globeCanvas.height = globeCanvas.clientHeight * ratio;
+      globeCanvas.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawGlobe();
+    }
+
+    function drawGlobe() {
+      const context = globeCanvas.getContext('2d');
+      const width = globeCanvas.clientWidth;
+      const height = globeCanvas.clientHeight;
+      context.clearRect(0, 0, width, height);
+      if (globeMode === '3d') drawGlobe3D(context, width, height);
+      else drawWorldMap2D(context, width, height);
+      drawDisasterMarkers(context, width, height);
+    }
+
+    function drawDisasterMarkers(context, width, height) {
+      const pulse = 5 + Math.sin(performance.now() / 260) * 2;
+      if (globeMode === '3d') {
+        const radius = Math.min(width, height) * .31 * globeZoom;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        disasterLocations.forEach((location) => {
+          const longitude = location.longitude * Math.PI / 180 + globeRotation;
+          const latitude = location.latitude * Math.PI / 180;
+          if (Math.cos(latitude) * Math.cos(longitude) <= 0) return;
+          const x = centerX + radius * Math.cos(latitude) * Math.sin(longitude);
+          const y = centerY - radius * Math.sin(latitude);
+          const markerColor = location.severity === 'critical' ? '#fb7185' : '#fbbf24';
+          context.fillStyle = location.severity === 'critical' ? 'rgba(248, 113, 113, .3)' : 'rgba(251, 191, 36, .25)';
+          context.beginPath();
+          context.arc(x, y, pulse + 5, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = markerColor;
+          context.beginPath();
+          context.arc(x, y, 4, 0, Math.PI * 2);
+          context.fill();
+        });
+        return;
+      }
+      const mapWidth = width * .92 * globeZoom;
+      const mapHeight = height * .76 * globeZoom;
+      const mapLeft = (width - mapWidth) / 2 + globePanX;
+      const mapTop = (height - mapHeight) / 2 + globePanY;
+      disasterLocations.forEach((location) => {
+        const x = mapLeft + (location.longitude + 180) / 360 * mapWidth;
+        const y = mapTop + (90 - location.latitude) / 180 * mapHeight;
+        const markerColor = location.severity === 'critical' ? '#fb7185' : '#fbbf24';
+        context.fillStyle = location.severity === 'critical' ? 'rgba(248, 113, 113, .32)' : 'rgba(251, 191, 36, .25)';
+        context.beginPath();
+        context.arc(x, y, pulse + 5, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = markerColor;
+        context.beginPath();
+        context.arc(x, y, 4, 0, Math.PI * 2);
+        context.fill();
+        const label = `${location.name} / ${location.country}`;
+        context.font = '10px Segoe UI';
+        const labelWidth = context.measureText(label).width + 8;
+        context.fillStyle = 'rgba(7, 17, 31, .9)';
+        context.fillRect(x + 8, y - 13, labelWidth, 17);
+        context.strokeStyle = markerColor;
+        context.strokeRect(x + 8, y - 13, labelWidth, 17);
+        context.fillStyle = '#ffe4e6';
+        context.fillText(label, x + 12, y); 
+      });
+    }
+
+    async function loadWorldData() {
+      if (worldFeatures.length || worldDataLoading) return;
+      worldDataLoading = true;
+      globeStatus.textContent = 'Loading real country data...';
+      try {
+        const worldDataUrl = window.location.protocol === 'file:' ? 'https://cdn.jsdelivr.net/gh/datasets/geo-countries@master/data/countries.geojson' : '/api/world';
+        const response = await fetch(worldDataUrl);
+        if (!response.ok) throw new Error('World data request failed');
+        const data = await response.json();
+        worldFeatures = data.features || [];
+      globeStatus.textContent = globeMode === '3d' ? '3D mode - rotating' : '2D mode - flat world map';
+        drawGlobe();
+      } catch (error) {
+        globeStatus.textContent = 'Unable to load world data. Check the network connection.';
+      } finally {
+        worldDataLoading = false;
+      }
+    }
+
+    function forEachPolygon(feature, drawPolygon) {
+      const geometry = feature.geometry;
+      if (!geometry) return;
+      const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+      polygons.forEach((polygon) => polygon.forEach(drawPolygon));
+    }
+
+    function drawRealWorld3D(context, width, height) {
+      const radius = Math.min(width, height) * .31 * globeZoom;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const project = ([longitude, latitude]) => {
+        const lon = longitude * Math.PI / 180 + globeRotation;
+        const lat = latitude * Math.PI / 180;
+        return { x: centerX + radius * Math.cos(lat) * Math.sin(lon), y: centerY - radius * Math.sin(lat), visible: Math.cos(lat) * Math.cos(lon) > 0 };
+      };
+      context.fillStyle = '#0b3554';
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.fill();
+      context.save();
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = '#4ade80';
+      context.strokeStyle = 'rgba(7, 17, 31, .7)';
+      context.lineWidth = .7;
+      worldFeatures.forEach((feature) => forEachPolygon(feature, (polygon) => {
+        context.beginPath();
+        polygon.forEach((coordinate, index) => { const point = project(coordinate); if (point.visible) { if (index === 0) context.moveTo(point.x, point.y); else context.lineTo(point.x, point.y); } });
+        context.closePath();
+        context.fill();
+        context.stroke();
+      }));
+      context.restore();
+      context.strokeStyle = '#67e8f9';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.stroke();
+    }
+
+    function drawRealWorld2D(context, width, height) {
+      const left = width * .04;
+      const top = height * .08;
+      const mapWidth = width * .92 * globeZoom;
+      const mapHeight = height * .76 * globeZoom;
+      const mapLeft = (width - mapWidth) / 2 + globePanX;
+      const mapTop = (height - mapHeight) / 2 + globePanY;
+      const project = ([longitude, latitude]) => [mapLeft + (longitude + 180) / 360 * mapWidth, mapTop + (90 - latitude) / 180 * mapHeight];
+      context.fillStyle = '#0b3554';
+      context.fillRect(mapLeft, mapTop, mapWidth, mapHeight);
+      context.save();
+      context.beginPath();
+      context.rect(0, 0, width, height);
+      context.clip();
+      context.strokeStyle = 'rgba(125, 211, 252, .27)';
+      context.lineWidth = 1;
+      for (let longitude = -180; longitude <= 180; longitude += 30) { const x = project([longitude, 0])[0]; context.beginPath(); context.moveTo(x, mapTop); context.lineTo(x, mapTop + mapHeight); context.stroke(); }
+      for (let latitude = -60; latitude <= 60; latitude += 30) { const y = project([0, latitude])[1]; context.beginPath(); context.moveTo(mapLeft, y); context.lineTo(mapLeft + mapWidth, y); context.stroke(); }
+      context.fillStyle = '#4ade80';
+      context.strokeStyle = '#164e63';
+      worldFeatures.forEach((feature) => forEachPolygon(feature, (polygon) => {
+        context.beginPath();
+        polygon.forEach((coordinate, index) => { const point = project(coordinate); if (index === 0) context.moveTo(point[0], point[1]); else context.lineTo(point[0], point[1]); });
+        context.closePath();
+        context.fill();
+        context.stroke();
+      }));
+      const labels = worldFeatures.map((feature) => {
+        const coordinates = [];
+        forEachPolygon(feature, (polygon) => polygon.forEach((coordinate) => coordinates.push(coordinate)));
+        const center = coordinates.reduce((sum, coordinate) => [sum[0] + coordinate[0], sum[1] + coordinate[1]], [0, 0]);
+        return { name: feature.properties && (feature.properties.ADMIN || feature.properties.NAME), center: project([center[0] / coordinates.length, center[1] / coordinates.length]), size: coordinates.length };
+      }).filter((label) => label.name).sort((first, second) => second.size - first.size).slice(0, 35);
+      context.fillStyle = '#e0f2fe';
+      context.font = '10px Segoe UI';
+      labels.forEach((label) => {
+        const textWidth = context.measureText(label.name).width;
+        const boxWidth = textWidth + 8;
+        const boxHeight = 17;
+        const boxX = label.center[0] - 4;
+        const boxY = label.center[1] - 13;
+        context.fillStyle = 'rgba(7, 17, 31, .88)';
+        context.fillRect(boxX, boxY, boxWidth, boxHeight);
+        context.strokeStyle = '#7dd3fc';
+        context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        context.fillStyle = '#e0f2fe';
+        context.fillText(label.name, label.center[0], label.center[1]);
+      });
+      context.restore();
+      context.fillStyle = '#e0f2fe';
+      context.font = '10px Segoe UI';
+      context.fillText('2D WORLD MAP - REAL COUNTRY DATA', left, height - 17);
+    }
+
+    function drawGlobe3D(context, width, height) {
+      if (worldFeatures.length) {
+        drawRealWorld3D(context, width, height);
+        return;
+      }
+      const radius = Math.min(width, height) * .31;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const project = (longitude, latitude) => {
+        const lon = (longitude * Math.PI / 180) + globeRotation;
+        const lat = latitude * Math.PI / 180;
+        const visible = Math.cos(lat) * Math.cos(lon) > -0.05;
+        return { x: centerX + radius * Math.cos(lat) * Math.sin(lon), y: centerY - radius * Math.sin(lat), visible };
+      };
+      context.fillStyle = '#0b3554';
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.fill();
+      context.save();
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.clip();
+      context.strokeStyle = 'rgba(125, 211, 252, .28)';
+      context.lineWidth = 1;
+      for (let latitude = -60; latitude <= 60; latitude += 30) {
+        context.beginPath();
+        for (let longitude = -180; longitude <= 180; longitude += 5) {
+          const point = project(longitude, latitude);
+          if (longitude === -180) context.moveTo(point.x, point.y); else context.lineTo(point.x, point.y);
+        }
+        context.stroke();
+      }
+      for (let longitude = -150; longitude <= 180; longitude += 30) {
+        context.beginPath();
+        for (let latitude = -90; latitude <= 90; latitude += 5) {
+          const point = project(longitude, latitude);
+          if (latitude === -90) context.moveTo(point.x, point.y); else context.lineTo(point.x, point.y);
+        }
+        context.stroke();
+      }
+      const continents = [[[-150, 60], [-125, 70], [-90, 55], [-80, 25], [-105, 15], [-125, 30]], [[-80, 10], [-55, 5], [-45, -25], [-65, -55], [-80, -20]], [[-15, 65], [35, 60], [55, 25], [25, 5], [-15, 20]], [[55, 25], [145, 45], [155, 5], [105, -10], [75, 10]], [[110, -15], [155, -20], [145, -45], [115, -40]]];
+      context.fillStyle = '#4ade80';
+      continents.forEach((continent) => {
+        context.beginPath();
+        continent.forEach(([longitude, latitude], index) => { const point = project(longitude, latitude); if (index === 0) context.moveTo(point.x, point.y); else context.lineTo(point.x, point.y); });
+        context.closePath();
+        context.fill();
+      });
+      context.restore();
+      context.strokeStyle = '#67e8f9';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      context.stroke();
+      context.fillStyle = 'rgba(125, 211, 252, .14)';
+      context.beginPath();
+      context.ellipse(centerX - radius * .3, centerY - radius * .35, radius * .22, radius * .12, -.5, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    function drawWorldMap2D(context, width, height) {
+      if (worldFeatures.length) {
+        drawRealWorld2D(context, width, height);
+        return;
+      }
+      const left = width * .06;
+      const top = height * .12;
+      const mapWidth = width * .88;
+      const mapHeight = height * .7;
+      context.fillStyle = '#0b3554';
+      context.fillRect(left, top, mapWidth, mapHeight);
+      context.strokeStyle = 'rgba(125, 211, 252, .3)';
+      context.lineWidth = 1;
+      for (let longitude = 0; longitude <= 12; longitude++) { const x = left + mapWidth * longitude / 12; context.beginPath(); context.moveTo(x, top); context.lineTo(x, top + mapHeight); context.stroke(); }
+      for (let latitude = 0; latitude <= 6; latitude++) { const y = top + mapHeight * latitude / 6; context.beginPath(); context.moveTo(left, y); context.lineTo(left + mapWidth, y); context.stroke(); }
+      const continents = [[.08, .2, .2, .25], [.25, .47, .13, .36], [.43, .19, .2, .28], [.58, .27, .3, .27], [.72, .62, .12, .16]];
+      context.fillStyle = '#4ade80';
+      continents.forEach(([x, y, continentWidth, continentHeight]) => { context.beginPath(); context.ellipse(left + mapWidth * x, top + mapHeight * y, mapWidth * continentWidth / 2, mapHeight * continentHeight / 2, 0, 0, Math.PI * 2); context.fill(); });
+      context.fillStyle = '#bae6fd';
+      context.font = '12px Segoe UI';
+      context.fillText('2D WORLD MAP - REAL COUNTRY DATA', left, height - 17);
+    }
+
+    function animateGlobe() {
+      if (!globeView.classList.contains('open')) return;
+      if (globeMode === '3d') globeRotation += .006;
+      drawGlobe();
+      globeAnimationFrame = requestAnimationFrame(animateGlobe);
+    }
+
+    window.addEventListener('resize', resizeGlobeCanvas);
+
+    logoutButton.addEventListener('click', () => {
+      sessionStorage.removeItem('aegis-authenticated');
+      dashboard.hidden = true;
+      loginScreen.hidden = false;
+      closeMenu();
+      loginForm.reset();
+      loginMessage.textContent = '';
+    });
+
+    loginSwitch.addEventListener('click', () => {
+      isSignupMode = !isSignupMode;
+      loginForm.reset();
+      loginMessage.textContent = '';
+      confirmPasswordField.hidden = !isSignupMode;
+      confirmPasswordInput.required = isSignupMode;
+      loginSubtitle.textContent = isSignupMode ? 'Create an observer account for Earth monitoring' : 'Sign in to monitor disasters across planet Earth';
+      loginSubmit.textContent = isSignupMode ? 'Sign up' : 'Enter observation station';
+      loginSwitch.textContent = isSignupMode ? 'Already have an account? Sign in' : 'No account? Sign up';
+    });
+
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!loginForm.checkValidity()) {
+        loginMessage.textContent = 'Please enter a valid observer name and access code';
+        loginForm.reportValidity();
+        return;
+      }
+      const username = usernameInput.value.trim();
+      const users = JSON.parse(localStorage.getItem('aegis-users') || '[]');
+      const existingUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
+      if (isSignupMode) {
+        if (existingUser) {
+        loginMessage.textContent = 'Please enter a valid observer name and access code';
+          return;
+        }
+        if (passwordInput.value !== confirmPasswordInput.value) {
+        loginMessage.textContent = 'Please enter a valid observer name and access code';
+          return;
+        }
+        users.push({ username, password: passwordInput.value });
+        localStorage.setItem('aegis-users', JSON.stringify(users));
+      } else if (!existingUser || existingUser.password !== passwordInput.value) {
+        loginMessage.textContent = 'Please enter a valid observer name and access code';
+        return;
+      }
+      sessionStorage.setItem('aegis-authenticated', 'true');
+      showDashboard();
+    });
+
+    passwordToggle.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      passwordToggle.textContent = isPassword ? 'Hide' : 'Show';
+      passwordToggle.setAttribute('aria-label', isPassword ? 'Hide access code' : 'Show access code');
+    });
+
+    if (sessionStorage.getItem('aegis-authenticated') === 'true') showDashboard();
+
+    const disasters = [
+      { id: "GEO-EQ-01", type: "GEOLOGICAL", name: "Earthquake", desc: "Violent seismic ground shaking caused by sudden energy release along geological fault lines." },
+      { id: "WTR-TS-02", type: "WATER", name: "Tsunami", desc: "Series of catastrophic high-energy displacement waves triggered by undersea earthquakes or volcanic activity." },
+      { id: "WTR-TY-03", type: "WATER", name: "Typhoon", desc: "Massive tropical storm system packing devastating gale force winds, storm surges, and torrential downpours." },
+      { id: "FIR-FR-04", type: "FIRE", name: "Fire", desc: "Rapidly spreading structural and brush fire threatening dense metropolitan populations and critical infrastructure." },
+      { id: "WTR-HC-05", type: "WATER", name: "Hurricane", desc: "Powerful oceanic cyclone system generating multi-story storm surges, tornado spin-offs, and extreme inland flooding." },
+      { id: "WTR-FF-06", type: "WATER", name: "Flash Flood", desc: "Sudden, violent torrent surge overwhelming drainage canals and urban basins in under 60 minutes." },
+      { id: "EES-VOL-07", type: "GEOLOGICAL", name: "Volcanic", desc: "Superheated pyroclastic flows, toxic sulfur dioxide degassing, and heavy ashfall accumulation." },
+      { id: "ELE-LTG-08", type: "WEATHER", name: "Lightning", desc: "High-voltage atmospheric electrostatic discharge capable of igniting fires and crippling electrical grids." },
+      { id: "WTR-TN-09", type: "WEATHER", name: "Tornado", desc: "Violent rotating column of air extending from a supercell thunderstorm directly to ground level." },
+      { id: "HAZ-NC-10", type: "HAZARD", name: "Nuclear", desc: "Catastrophic reactor meltdown or radiological contamination event with severe ionizing radiation fallout." },
+      { id: "BIO-PAN-11", type: "HAZARD", name: "Pandemic", desc: "Uncontrolled transmission of a novel high-mortality airborne pathogen across dense urban centers." },
+      { id: "EES-LND-12", type: "GEOLOGICAL", name: "Landslide", desc: "Catastrophic downslope movement of rock, soil, and organic debris triggered by saturation or seismic activity." },
+      { id: "WTR-HW-13", type: "WEATHER", name: "Heatwave", desc: "Prolonged period of dangerously high temperatures creating severe heat stress, power grid failures, and drought." },
+      { id: "HAZ-CHM-14", type: "HAZARD", name: "Chemical", desc: "Major industrial toxic chemical release causing lethal vapor clouds, environmental contamination, and mass casualties." }
+    ];
+
+    let currentCategory = 'ALL';
+    function renderCards(items) {
+      const container = document.getElementById('card-container');
+      container.innerHTML = items.map(item => `
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span>${item.id}</span>
+              <span>${item.type}</span>
+            </div>
+            <div class="card-title">${item.name}</div>
+            <div class="card-desc">${item.desc}</div>
+            <div class="card-meta">${(disasterLocations.find((location) => location.name === item.name) || {}).metric || 'Observed event'} - Simulated data</div>
+          </div>
+          <button class="deploy-btn" onclick="launchSimulation('${item.id}', '${item.name}')">Open observation</button>
+        </div>
+      `).join('');
+    }
+
+    function filterCards() {
+      const query = document.getElementById('search').value.toLowerCase();
+      const filtered = disasters.filter(item => {
+        const matchesCategory = currentCategory === 'ALL' || item.type === currentCategory;
+        const matchesSearch = item.name.toLowerCase().includes(query) || item.id.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+      });
+      renderCards(filtered);
+    }
+
+    function toggleEvent() {
+      simulationRunning = !simulationRunning;
+      if (simulationRunning) { simulationStart = performance.now(); animateSimulation(simulationStart); }
+      updateEventButton();
+    }
+
+    function updateEventButton() {
+      const button = document.getElementById('start-event');
+      const status = document.getElementById('event-status');
+      if (!button || !status) return;
+      button.classList.toggle('running', simulationRunning);
+      button.textContent = simulationRunning ? 'Stop observation' : 'Start observation';
+      status.textContent = simulationRunning ? 'Receiving planetary signal' : 'Select a level and start observation';
+      status.style.color = simulationRunning ? '#4ade80' : '#fbbf24';
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === cat);
+      });
+      filterCards();
+    }
+
+    let animationFrame;
+    let simulationType = '';
+    let simulationStart = 0;
+    let simulationLevel = 1;
+    let simulationRunning = false;
+
+    function launchSimulation(id, name) {
+      const simulator = document.getElementById('simulator');
+      const location = disasterLocations.find((item) => item.name === name);
+      const context = location ? location.country + ' / ' + location.continent + ' / ' + location.metric : 'Simulated data';
+      document.getElementById('sim-title').textContent = name + ' // ' + id + ' / ' + context;
+      simulator.classList.add('open');
+      simulationType = id.split('-')[1] || id;
+      simulationRunning = false;
+      simulationStart = performance.now();
+      setSimulationLevel(1);
+      updateEventButton();
+      cancelAnimationFrame(animationFrame);
+      resizeCanvas();
+      simulator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function setSimulationLevel(level) {
+      simulationLevel = level;
+      document.querySelectorAll('.level-btn').forEach(button => {
+        button.classList.toggle('active', Number(button.dataset.level) === level);
+      });
+      const levelNames = { 1: 'Low', 2: 'Elevated', 3: 'Severe' };
+      const title = document.getElementById('sim-title');
+      if (title.textContent.includes(' // ')) title.textContent = title.textContent.split(' // ')[0] + ' // Level: ' + levelNames[level];
+    }
+
+    function closeSimulation() {
+      document.getElementById('simulator').classList.remove('open');
+      simulationRunning = false;
+      cancelAnimationFrame(animationFrame);
+    }
+
+    function resizeCanvas() {
+      const canvas = document.getElementById('disaster-canvas');
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * ratio;
+      canvas.height = canvas.clientHeight * ratio;
+      canvas.getContext('2d').scale(ratio, ratio);
+    }
+
+    function animateSimulation(now) {
+      const canvas = document.getElementById('disaster-canvas');
+      if (!document.getElementById('simulator').classList.contains('open') || !simulationRunning) return;
+      const context = canvas.getContext('2d');
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const time = (now - simulationStart) / 1000 * simulationLevel;
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = '#070b13';
+      context.fillRect(0, 0, width, height);
+      context.save();
+      if (simulationType === 'EQ') context.translate(Math.sin(time * 42) * 6, Math.cos(time * 37) * 4);
+      drawCityscape(context, width, height, time);
+      if (simulationType === 'EQ') drawEarthquake(context, width, height, time);
+      else if (simulationType === 'TS') drawTsunami(context, width, height, time);
+      else if (simulationType === 'FF') drawFlood(context, width, height, time);
+      else if (simulationType === 'FR') drawFire(context, width, height, time);
+      else if (simulationType === 'TY') drawTyphoon(context, width, height, time);
+      else if (simulationType === 'HC') drawStorm(context, width, height, time);
+      else if (simulationType === 'VOL') drawVolcano(context, width, height, time);
+      else if (simulationType === 'LTG') drawLightning(context, width, height, time);
+      else if (simulationType === 'TN') drawTornado(context, width, height, time);
+      else if (simulationType === 'HW') drawHeatwave(context, width, height, time);
+      else drawParticles(context, width, height, time);
+      context.restore();
+      animationFrame = requestAnimationFrame(animateSimulation);
+    }
+
+    function drawEarthquake(context, width, height, time) {
+      const opening = 10 + Math.min(34, time * 2.2) + Math.sin(time * 4) * 3;
+      const center = width * .5 + Math.sin(time * 2.5) * 3;
+      const groundTop = height * .68;
+
+      context.fillStyle = '#020617';
+      context.beginPath();
+      context.moveTo(center - opening * .35, groundTop);
+      context.lineTo(center - opening, height);
+      context.lineTo(center + opening, height);
+      context.lineTo(center + opening * .35, groundTop);
+      context.closePath();
+      context.fill();
+
+      context.strokeStyle = '#fca5a5';
+      context.lineWidth = 3;
+      context.beginPath();
+      context.moveTo(center - opening * .35, groundTop);
+      context.lineTo(center - opening, height);
+      context.moveTo(center + opening * .35, groundTop);
+      context.lineTo(center + opening, height);
+      context.stroke();
+
+      context.fillStyle = '#64748b';
+      context.beginPath();
+      context.moveTo(0, groundTop);
+      context.lineTo(center - opening * .35, groundTop);
+      context.lineTo(center - opening, height);
+      context.lineTo(0, height);
+      context.closePath();
+      context.fill();
+      context.beginPath();
+      context.moveTo(center + opening * .35, groundTop);
+      context.lineTo(width, groundTop);
+      context.lineTo(width, height);
+      context.lineTo(center + opening, height);
+      context.closePath();
+      context.fill();
+
+      context.fillStyle = '#fbbf24';
+      for (let i = 0; i < 18; i++) {
+        const fallProgress = (time * 95 + i * 23) % 180;
+        const side = i % 2 ? 1 : -1;
+        const x = center + side * (opening * .5 + 8 + (i % 5) * 9) + Math.sin(time * 5 + i) * 6;
+        const y = groundTop - fallProgress;
+        context.globalAlpha = Math.max(0, 1 - fallProgress / 180);
+        context.fillRect(x, y, 4 + i % 5, 4 + i % 4);
+      }
+      context.globalAlpha = 1;
+    }
+
+    function drawCityscape(context, width, height, time) {
+      const buildings = [
+        [0.04, 0.47, 0.11, 0.27], [0.17, 0.35, 0.13, 0.39], [0.32, 0.53, 0.10, 0.21],
+        [0.44, 0.29, 0.14, 0.45], [0.61, 0.43, 0.11, 0.31], [0.74, 0.22, 0.15, 0.52], [0.91, 0.48, 0.10, 0.26]
+      ];
+      context.fillStyle = '#263449';
+      context.fillRect(0, height * .74, width, height * .26);
+      buildings.forEach((building, buildingIndex) => {
+        const tsunamiImpact = simulationType === 'TS' ? Math.max(0, (time - (.9 + (1 - building[0]) * 1.5)) * .34) : 0;
+        const collapse = simulationType === 'EQ'
+          ? Math.min(.72, Math.max(0, (time - .3 - buildingIndex * .12) * .25))
+          : Math.min(.82, tsunamiImpact);
+        const x = width * building[0];
+        const lean = simulationType === 'TS' ? Math.sin(buildingIndex * 2.7) * collapse * 18 : 0;
+        const y = height * building[1] + height * building[3] * collapse;
+        const buildingWidth = width * building[2];
+        const buildingHeight = height * building[3] * (1 - collapse);
+        context.fillStyle = buildingIndex % 2 ? '#475569' : '#334155';
+        context.save();
+        context.translate(x + buildingWidth / 2, y);
+        context.rotate(lean * Math.PI / 180);
+        context.fillRect(-buildingWidth / 2, 0, buildingWidth, buildingHeight);
+        context.fillStyle = '#0f172a';
+        context.fillRect(-buildingWidth * .42, 7, buildingWidth * .84, 4);
+        const columns = Math.max(2, Math.floor(buildingWidth / 22));
+        const rows = Math.max(2, Math.floor(buildingHeight / 25));
+        for (let row = 0; row < rows; row++) {
+          for (let column = 0; column < columns; column++) {
+            const lit = (buildingIndex * 5 + row * 3 + column) % 4 !== 0;
+            context.fillStyle = lit ? '#fbbf24' : '#172033';
+            context.fillRect(-buildingWidth * .38 + column * (buildingWidth * .76 / columns), 18 + row * 22, 7, 10);
+          }
+        }
+        context.restore();
+        if (simulationType === 'TS' && collapse > .25) {
+          context.fillStyle = '#94a3b8';
+          for (let debris = 0; debris < 4; debris++) {
+            const debrisX = x + Math.sin(time * 3 + debris + buildingIndex) * buildingWidth;
+            const debrisY = height * .75 - ((time * 45 + debris * 17 + buildingIndex * 9) % 55);
+            context.fillRect(debrisX, debrisY, 4 + debris, 3 + debris % 3);
+          }
+        }
+        if (buildingIndex === 3 || buildingIndex === 5) {
+          context.strokeStyle = '#64748b'; context.lineWidth = 2; context.beginPath();
+          context.moveTo(x + buildingWidth / 2, y); context.lineTo(x + buildingWidth / 2, y - 18); context.stroke();
+        }
+      });
+      context.fillStyle = '#0f172a'; context.fillRect(0, height * .88, width, 4);
+      context.strokeStyle = '#f8fafc'; context.setLineDash([18, 18]); context.lineWidth = 2; context.beginPath(); context.moveTo(0, height * .95); context.lineTo(width, height * .95); context.stroke(); context.setLineDash([]);
+      context.strokeStyle = '#94a3b8'; context.lineWidth = 2;
+      context.beginPath(); context.moveTo(width * .13, height * .74); context.lineTo(width * .13, height * .55); context.lineTo(width * .25, height * .55); context.stroke();
+      context.fillStyle = '#fde68a'; context.beginPath(); context.arc(width * .13, height * .55, 4 + Math.sin(time * 3) * 1, 0, Math.PI * 2); context.fill();
+    }
+
+    function drawFlood(context, width, height, time) {
+      const floodRise = Math.min(.3, time * .028);
+      const water = height * (.62 - floodRise + Math.sin(time * 2) * .025);
+      context.fillStyle = '#075985'; context.fillRect(0, water, width, height - water);
+      context.fillStyle = 'rgba(14, 116, 144, .38)'; context.fillRect(0, water + 20, width, height - water - 20);
+      context.strokeStyle = '#67e8f9'; context.lineWidth = 3;
+      for (let y = water + 12; y < height; y += 24) { context.beginPath(); for (let x = 0; x < width; x += 20) context.lineTo(x, y + Math.sin(x * .04 + time * 4) * 5); context.stroke(); }
+      context.strokeStyle = '#cffafe'; context.lineWidth = 4;
+      for (let wave = 0; wave < 3; wave++) {
+        const waveX = ((time * (90 + wave * 35) + wave * width * .38) % (width + 180)) - 90;
+        const waveHeight = water - 22 - wave * 19;
+        context.beginPath();
+        context.moveTo(waveX - 120, waveHeight + 18);
+        context.quadraticCurveTo(waveX, waveHeight - 42, waveX + 120, waveHeight + 18);
+        context.stroke();
+      }
+      context.fillStyle = '#854d0e'; context.fillRect(width * .42, water - 85, 70, 85);
+      context.fillStyle = '#0c4a6e'; context.fillRect(width * .42, water - 12, 70, 12);
+      context.fillStyle = '#a5f3fc';
+      for (let i = 0; i < 18; i++) { const foamX = (i * 83 + time * 110) % width; context.fillRect(foamX, water + 5 + (i % 3) * 8, 10 + i % 7, 3); }
+    }
+
+    function drawTsunami(context, width, height, time) {
+      const surge = Math.min(.18, time * .012);
+      const water = height * (.82 - surge);
+      const waveTravel = Math.min(width * .55, time * width * .09);
+      const waveBase = width * .92 - waveTravel;
+      const waveHeight = height * (.42 + Math.sin(time * 2) * .035);
+
+      context.fillStyle = '#075985';
+      context.fillRect(0, water, width, height - water);
+      context.fillStyle = 'rgba(14, 116, 144, .72)';
+      context.beginPath();
+      context.moveTo(width, height);
+      context.lineTo(width, height * .28);
+      context.bezierCurveTo(width * .86, height * .18, waveBase + 70, waveHeight - 18, waveBase, waveHeight);
+      context.bezierCurveTo(waveBase - 45, waveHeight + 30, waveBase - 55, water, 0, water);
+      context.lineTo(0, height);
+      context.closePath();
+      context.fill();
+
+      context.strokeStyle = '#bae6fd';
+      context.lineWidth = 5;
+      context.beginPath();
+      context.moveTo(width, height * .28);
+      context.bezierCurveTo(width * .86, height * .18, waveBase + 70, waveHeight - 18, waveBase, waveHeight);
+      context.bezierCurveTo(waveBase - 45, waveHeight + 30, waveBase - 55, water, 0, water);
+      context.stroke();
+
+      context.strokeStyle = 'rgba(186, 230, 253, .8)';
+      context.lineWidth = 2;
+      for (let row = 0; row < 5; row++) {
+        context.beginPath();
+        for (let x = 0; x < width; x += 18) context.lineTo(x, water + 15 + row * 18 + Math.sin(x * .035 + time * 4 + row) * 5);
+        context.stroke();
+      }
+
+      context.fillStyle = '#e0f2fe';
+      for (let i = 0; i < 28; i++) {
+        const foamX = waveBase + (i * 31) % Math.max(40, width - waveBase) - 20;
+        const foamY = waveHeight + (i % 7) * 11 + Math.sin(time * 4 + i) * 4;
+        context.fillRect(foamX, foamY, 8 + i % 8, 3);
+      }
+
+      context.fillStyle = 'rgba(125, 211, 252, .6)';
+      for (let i = 0; i < 16; i++) {
+        const sprayX = waveBase + Math.sin(time * 3 + i) * 35 + i * 8;
+        const sprayY = waveHeight - 12 - (i % 5) * 8;
+        context.beginPath();
+        context.arc(sprayX, sprayY, 2 + i % 3, 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+
+    function drawTyphoon(context, width, height, time) {
+      const centerX = width * .68;
+      const centerY = height * .42;
+      const outerRadius = Math.min(width, height) * .58;
+      const rotation = time * 1.35;
+
+      context.fillStyle = '#0f1f35';
+      context.fillRect(0, 0, width, height);
+      context.fillStyle = 'rgba(30, 64, 175, .26)';
+      context.beginPath();
+      context.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+      context.fill();
+
+      context.strokeStyle = 'rgba(191, 219, 254, .72)';
+      context.lineWidth = 18;
+      for (let arm = 0; arm < 6; arm++) {
+        context.beginPath();
+        for (let step = 0; step <= 90; step++) {
+          const radius = 25 + step * outerRadius / 90;
+          const angle = rotation + arm * Math.PI / 3 + step * .075;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius * .58;
+          if (step === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        }
+        context.stroke();
+      }
+
+      context.strokeStyle = 'rgba(96, 165, 250, .7)';
+      context.lineWidth = 9;
+      for (let arm = 0; arm < 5; arm++) {
+        context.beginPath();
+        for (let step = 0; step <= 80; step++) {
+          const radius = 15 + step * outerRadius * .82 / 80;
+          const angle = -rotation * 1.2 + arm * Math.PI * 2 / 5 - step * .09;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius * .58;
+          if (step === 0) context.moveTo(x, y); else context.lineTo(x, y);
+        }
+        context.stroke();
+      }
+
+      context.fillStyle = '#0b1220';
+      context.beginPath();
+      context.ellipse(centerX, centerY, 28, 18, 0, 0, Math.PI * 2);
+      context.fill();
+      context.strokeStyle = '#fef3c7';
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(centerX, centerY, 29 + Math.sin(time * 2) * 2, 0, Math.PI * 2);
+      context.stroke();
+
+      for (let objectIndex = 0; objectIndex < 22; objectIndex++) {
+        const progress = (time * .16 + objectIndex / 22) % 1;
+        const radius = 220 * (1 - progress) + 38;
+        const angle = rotation * (1.4 + progress) + objectIndex * 2.4;
+        const objectX = centerX + Math.cos(angle) * radius;
+        const objectY = centerY + Math.sin(angle) * radius * .58;
+        context.save();
+        context.translate(objectX, objectY);
+        context.rotate(angle + Math.PI / 2);
+        if (objectIndex % 3 === 0) {
+          context.strokeStyle = '#86efac';
+          context.lineWidth = 3;
+          context.beginPath();
+          context.moveTo(0, 15); context.lineTo(0, -13);
+          context.moveTo(0, -7); context.lineTo(-8, -15);
+          context.moveTo(0, -4); context.lineTo(8, -12);
+          context.stroke();
+        } else if (objectIndex % 3 === 1) {
+          context.fillStyle = '#b45309';
+          context.fillRect(-10, -7, 20, 14);
+          context.fillStyle = '#fca5a5';
+          context.beginPath();
+          context.moveTo(-13, -7); context.lineTo(0, -18); context.lineTo(13, -7); context.closePath(); context.fill();
+        } else {
+          context.fillStyle = '#fbbf24';
+          context.fillRect(-5, -3, 10, 6);
+        }
+        context.restore();
+      }
+
+      context.fillStyle = 'rgba(226, 232, 240, .8)';
+      context.font = 'bold 12px Segoe UI';
+      context.fillText('TYPHOON EYE', centerX - 34, centerY + 50);
+    }
+
+    function drawFire(context, width, height, time) {
+      if (simulationType !== 'FR') {
+        context.fillStyle = '#431407'; context.fillRect(0, height * .82, width, height * .18);
+        for (let i = 0; i < 30; i++) { const x = width * (.2 + (i % 10) * .07) + Math.sin(time * 5 + i) * 12; const y = height * .78 - ((time * 90 + i * 19) % 150); context.fillStyle = i % 2 ? '#fb923c' : '#fde047'; context.beginPath(); context.arc(x, y, 4 + i % 5, 0, Math.PI * 2); context.fill(); }
+        return;
+      }
+      const spread = Math.min(width * .92, time * width * .16);
+      const ground = height * .78;
+      context.fillStyle = '#1c1917';
+      context.fillRect(0, ground, width, height - ground);
+      context.fillStyle = '#365314';
+      context.fillRect(0, ground - 8, width, 10);
+
+      for (let treeIndex = 0; treeIndex < 16; treeIndex++) {
+        const x = width * (.03 + treeIndex * .064) + Math.sin(treeIndex * 4) * 10;
+        const treeHeight = 65 + (treeIndex % 4) * 18;
+        const burning = x < spread;
+        const burnProgress = burning ? Math.min(1, (spread - x) / 70) : 0;
+        context.strokeStyle = burning ? '#451a03' : '#422006';
+        context.lineWidth = 7;
+        context.beginPath();
+        context.moveTo(x, ground);
+        context.lineTo(x + (burning ? burnProgress * 10 : 0), ground - treeHeight * (1 - burnProgress));
+        context.stroke();
+        if (!burning) {
+          context.fillStyle = treeIndex % 2 ? '#166534' : '#15803d';
+          for (let branch = 0; branch < 3; branch++) {
+            context.beginPath();
+            context.arc(x, ground - treeHeight + branch * 22, 22 - branch * 3, 0, Math.PI * 2);
+            context.fill();
+          }
+        } else {
+          context.fillStyle = '#f97316';
+          context.beginPath();
+          context.moveTo(x - 18, ground - 8); context.quadraticCurveTo(x, ground - 62 - Math.sin(time * 4 + treeIndex) * 10, x + 18, ground - 8); context.fill();
+          context.fillStyle = '#fde047';
+          context.beginPath();
+          context.moveTo(x - 8, ground - 8); context.quadraticCurveTo(x, ground - 42 - Math.sin(time * 5 + treeIndex) * 7, x + 8, ground - 8); context.fill();
+        }
+      }
+
+      context.fillStyle = 'rgba(71, 85, 105, .36)';
+      for (let smoke = 0; smoke < 13; smoke++) {
+        const smokeX = spread - 25 + Math.sin(time + smoke) * 35;
+        const smokeY = ground - 100 - ((time * 18 + smoke * 17) % 105);
+        context.beginPath();
+        context.arc(smokeX, smokeY, 10 + smoke % 9, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.fillStyle = '#fbbf24';
+      for (let ember = 0; ember < 18; ember++) {
+        const emberX = spread - ((time * 20 + ember * 31) % 80);
+        const emberY = ground - 25 - ((time * 35 + ember * 19) % 100);
+        context.fillRect(emberX, emberY, 3, 3);
+      }
+    }
+
+    function drawStorm(context, width, height, time) { context.fillStyle = '#172554'; context.fillRect(0, 0, width, height); context.strokeStyle = '#93c5fd'; context.lineWidth = 2; for (let i = 0; i < 10; i++) { context.beginPath(); context.arc(width / 2, height / 2, 20 + i * 18 + (time * 15 % 18), time * 2 + i, time * 2 + i + 4); context.stroke(); } for (let i = 0; i < 80; i++) { const x = (i * 47 + time * 140) % width; context.fillStyle = '#bfdbfe'; context.fillRect(x, (i * 23) % height, 2, 12); } }
+    function drawVolcano(context, width, height, time) { context.fillStyle = '#451a03'; context.beginPath(); context.moveTo(width * .2, height); context.lineTo(width * .5, height * .25); context.lineTo(width * .8, height); context.fill(); context.fillStyle = '#f97316'; context.beginPath(); context.arc(width * .5, height * .25, 16 + Math.sin(time * 5) * 5, 0, Math.PI * 2); context.fill(); drawFire(context, width, height, time); }
+    function drawLightning(context, width, height, time) { context.fillStyle = '#1e1b4b'; context.fillRect(0, 0, width, height); if (Math.floor(time * 4) % 3 === 0) { context.strokeStyle = '#fef08a'; context.lineWidth = 6; context.beginPath(); context.moveTo(width * .55, 0); context.lineTo(width * .48, height * .38); context.lineTo(width * .58, height * .38); context.lineTo(width * .42, height); context.stroke(); } }
+    function drawTornado(context, width, height, time) { context.strokeStyle = '#cbd5e1'; context.lineWidth = 6; for (let i = 0; i < 10; i++) { context.beginPath(); context.ellipse(width / 2, height * .18 + i * 24, 35 + i * 14 + Math.sin(time * 3 + i) * 8, 8, 0, 0, Math.PI * 2); context.stroke(); } }
+    function drawHeatwave(context, width, height, time) { context.fillStyle = '#7c2d12'; context.fillRect(0, 0, width, height); context.strokeStyle = '#fdba74'; context.lineWidth = 4; for (let x = 30; x < width; x += 35) { context.beginPath(); for (let y = 0; y < height; y += 10) context.lineTo(x + Math.sin(y * .04 + time * 3) * 8, y); context.stroke(); } }
+    function drawParticles(context, width, height, time) { context.fillStyle = '#86efac'; for (let i = 0; i < 90; i++) { context.globalAlpha = .2 + (i % 5) / 8; context.beginPath(); context.arc((i * 71 + time * 30) % width, (i * 37 + time * 20) % height, 2 + i % 4, 0, Math.PI * 2); context.fill(); } }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initial Render
+    renderCards(disasters);
+
+  </script>
+</body>
+</html>
